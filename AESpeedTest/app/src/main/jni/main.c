@@ -1,3 +1,6 @@
+/*****
+ * Reference: https://github.com/panxw/android-aes-jni
+*****/
 #include <stdio.h>
 #include <jni.h>
 #include <stdlib.h>
@@ -10,12 +13,6 @@
 #define DECRYPT 1
 #define AES_KEY_SIZE 256
 #define READ_LEN 10
-
-#define TARGET_CLASS "chen/kuanlin/aespeedtest/JNI"
-#define TARGET_CRYPT "crypt"
-#define TARGET_CRYPT_SIG "([BJI)[B"
-#define TARGET_READ "read"
-#define TARGET_READ_SIG "(Ljava/lang/String;J)[B"
 
 //AES_IV
 static unsigned char AES_IV[16] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
@@ -31,13 +28,14 @@ static unsigned char AES_KEY[32] = { 0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71,
  * Method:    sha1
  * Signature: (Ljava/lang/String;JI)[Ljava/lang/Object;
  */
-JNIEXPORT jbyteArray JNICALL android_native_aes(JNIEnv *env, jclass clazz,
+jbyteArray
+Java_chen_kuanlin_aespeedtest_JNI_crypt(JNIEnv *env, jclass clazz,
 		jbyteArray jarray, jlong jtimestamp, jint jmode) {
 	//check input data
 	unsigned int len = (unsigned int) ((*env)->GetArrayLength(env, jarray));
-	if (len <= 0 || len >= MAX_LEN) {
+	/*if (len <= 0 || len >= MAX_LEN) {
 		return NULL;
-	}
+	}*/
 
 	unsigned char *data = (unsigned char*) (*env)->GetByteArrayElements(env,
 			jarray, NULL);
@@ -105,7 +103,8 @@ JNIEXPORT jbyteArray JNICALL android_native_aes(JNIEnv *env, jclass clazz,
 	return bytes;
 }
 
-JNIEXPORT jbyteArray JNICALL android_native_read(JNIEnv *env, jclass clazz,
+jbyteArray
+Java_chen_kuanlin_aespeedtest_JNI_read(JNIEnv *env, jclass clazz,
 		jstring jstr, jlong jtimestam) {
 	char * path = (char *) (*env)->GetStringUTFChars(env, jstr, NULL);
 	if (!path) {
@@ -127,37 +126,4 @@ JNIEXPORT jbyteArray JNICALL android_native_read(JNIEnv *env, jclass clazz,
 	(*env)->SetByteArrayRegion(env, bytes, 0, READ_LEN, (jbyte*) pBuf);
 
 	return bytes;
-}
-
-/**
- * 註冊JNI
- */
-static const JNINativeMethod gMethods[] = { { TARGET_CRYPT, TARGET_CRYPT_SIG,
-		(void*) android_native_aes }, { TARGET_READ, TARGET_READ_SIG,
-		(void*) android_native_read } };
-
-JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
-	JNIEnv* env = NULL;
-	if ((*vm)->GetEnv(vm, (void**) &env, JNI_VERSION_1_4) != JNI_OK) {
-		return -1;
-	}
-
-	jclass clazz = (*env)->FindClass(env, TARGET_CLASS);
-	if (!clazz) {
-		return -1;
-	}
-	//這裡是關鍵，把本地函數和一個java類方法關聯起來。不管之前是否關聯過，一律把之前的替換掉！
-	if ((*env)->RegisterNatives(env, clazz, gMethods,
-			sizeof(gMethods) / sizeof(gMethods[0])) != JNI_OK) {
-		return -1;
-	}
-
-	return JNI_VERSION_1_4;
-}
-
-JNIEXPORT void JNICALL JNI_OnUnload(JavaVM* vm, void* reserved) {
-	JNIEnv* env = NULL;
-	if ((*vm)->GetEnv(vm, (void**) &env, JNI_VERSION_1_4) != JNI_OK) {
-		return;
-	}
 }
